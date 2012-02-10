@@ -10,7 +10,8 @@ def tweet_collection
 end
 
 def latest_stored_tweet_id
-  tweet_collection.find.sort(["id", "descending"]).limit(1).to_a[0]["id"]
+  tweet = tweet_collection.find.sort(["id", "descending"]).limit(1).to_a[0]
+  tweet && tweet["id"]
 end
 
 def load_tweets(username)
