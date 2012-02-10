@@ -32,7 +32,7 @@ def load_tweets(username)
   tweets
 end
 
-def store_tweets(username="lazyatom")
+def store_tweets(username)
   tweets = load_tweets(username)
   puts "Importing #{tweets.size} new tweets..."
   tweets.reverse!
@@ -42,4 +42,4 @@ def store_tweets(username="lazyatom")
   end
 end
 
-store_tweets
+store_tweets(ARGV[0]) if __FILE__ == $0
