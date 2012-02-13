@@ -10,7 +10,8 @@ def tweet_collection
 end
 
 def latest_stored_tweet_id
-  tweet_collection.find.sort(["id", "descending"]).limit(1).to_a[0]["id"]
+  tweet = tweet_collection.find.sort(["id", "descending"]).limit(1).to_a[0]
+  tweet && tweet["id"]
 end
 
 def load_tweets(username)
@@ -20,16 +21,18 @@ def load_tweets(username)
   result = nil
   page = 1
   until page > 1 && result.empty?
+    print "Fetching page #{page}..."
     open("#{url}&page=#{page}") do |f|
       page  += 1
       result = Yajl::Parser.parse(f.read)
+      puts "got #{result.length} tweets"
       tweets.push *result if !result.empty?
     end
   end
   tweets
 end
 
-def store_tweets(username="lazyatom")
+def store_tweets(username)
   tweets = load_tweets(username)
   puts "Importing #{tweets.size} new tweets..."
   tweets.reverse!
@@ -39,4 +42,4 @@ def store_tweets(username="lazyatom")
   end
 end
 
-store_tweets
+store_tweets(ARGV[0]) if __FILE__ == $0
