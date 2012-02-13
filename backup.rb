@@ -4,6 +4,10 @@ require 'yajl'
 require 'mongo'
 require 'open-uri'
 
+def debug(msg)
+  puts msg if ENV["DEBUG"]
+end
+
 def tweet_collection
   @db ||= Mongo::Connection.new("127.0.0.1").db("twitter")
   @tweet_collection ||= @db.collection('tweets')
@@ -21,11 +25,11 @@ def load_tweets(username)
   result = nil
   page = 1
   until page > 1 && result.empty?
-    print "Fetching page #{page}..."
+    debug "Fetching page #{page}..."
     open("#{url}&page=#{page}") do |f|
       page  += 1
       result = Yajl::Parser.parse(f.read)
-      puts "got #{result.length} tweets"
+      debug "got #{result.length} tweets"
       tweets.push *result if !result.empty?
     end
   end
