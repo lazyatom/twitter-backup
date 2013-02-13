@@ -8,19 +8,19 @@ def debug(msg)
   puts msg if ENV["DEBUG"]
 end
 
-def tweet_collection
+def tweet_collection(username)
   @db ||= Mongo::Connection.new("127.0.0.1").db("twitter")
-  @tweet_collection ||= @db.collection('tweets')
+  @tweet_collection ||= @db.collection(username)
 end
 
-def latest_stored_tweet_id
-  tweet = tweet_collection.find.sort(["id", "descending"]).limit(1).to_a[0]
+def latest_stored_tweet_id(username)
+  tweet = tweet_collection(username).find.sort(["id", "descending"]).limit(1).to_a[0]
   tweet && tweet["id"]
 end
 
 def load_tweets(username)
   url = "http://api.twitter.com/1/statuses/user_timeline.json?screen_name=#{username}&trim_user=1&count=200"
-  url << "&since_id=#{latest_stored_tweet_id}" if latest_stored_tweet_id
+  url << "&since_id=#{latest_stored_tweet_id(username)}" if latest_stored_tweet_id(username)
   tweets = []
   result = nil
   page = 1
@@ -42,7 +42,7 @@ def store_tweets(username)
   tweets.reverse!
   tweets.each_with_index do |tweet, idx|
     puts tweet['id'] if (idx + 1) % 100 == 0
-    tweet_collection.insert(tweet)
+    tweet_collection(username).insert(tweet)
   end
 end
 
