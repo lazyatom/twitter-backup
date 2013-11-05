@@ -1,8 +1,17 @@
 #!/usr/bin/env ruby
 require "bundler/setup"
-require 'yajl'
+require 'twitter'
 require 'mongo'
-require 'open-uri'
+require 'dotenv'
+
+Dotenv.load
+
+Twitter.configure do |config|
+  config.consumer_key = ENV['CONSUMER_KEY']
+  config.consumer_secret = ENV['CONSUMER_SECRET']
+  config.oauth_token = ENV['OAUTH_TOKEN']
+  config.oauth_token_secret = ENV['OAUTH_TOKEN_SECRET']
+end
 
 def debug(msg)
   puts msg if ENV["DEBUG"]
@@ -19,21 +28,18 @@ def latest_stored_tweet_id(username)
 end
 
 def load_tweets(username)
-  url = "http://api.twitter.com/1/statuses/user_timeline.json?screen_name=#{username}&trim_user=1&count=200"
-  url << "&since_id=#{latest_stored_tweet_id(username)}" if latest_stored_tweet_id(username)
   tweets = []
-  result = nil
-  page = 1
-  until page > 1 && result.empty?
-    debug "Fetching page #{page}..."
-    open("#{url}&page=#{page}") do |f|
-      page  += 1
-      result = Yajl::Parser.parse(f.read)
-      debug "got #{result.length} tweets"
-      tweets.push *result if !result.empty?
-    end
+  options = {trim_user: true, count: 200}
+  options[:since_id] = latest_stored_tweet_id(username) if latest_stored_tweet_id(username)
+  result = Twitter.user_timeline(username, options)
+  tweets += result
+  until result.empty?
+    new_start = tweets.last.id - 1
+    options[:max_id] = new_start
+    result = Twitter.user_timeline(username, options)
+    tweets += result
   end
-  tweets
+  tweets.map(&:to_hash)
 end
 
 def store_tweets(username)
@@ -41,8 +47,13 @@ def store_tweets(username)
   puts "Importing #{tweets.size} new tweets..."
   tweets.reverse!
   tweets.each_with_index do |tweet, idx|
-    puts tweet['id'] if (idx + 1) % 100 == 0
-    tweet_collection(username).insert(tweet)
+    puts tweet[:id] if (idx + 1) % 100 == 0
+    begin
+      tweet_collection(username).insert(tweet)
+    rescue => e
+      puts "failed to insert: #{tweet.inspect}"
+      raise e
+    end
   end
 end
 
