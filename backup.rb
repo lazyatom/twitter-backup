@@ -44,7 +44,7 @@ end
 
 def store_tweets(username)
   tweets = load_tweets(username)
-  puts "Importing #{tweets.size} new tweets..."
+  puts "Importing #{tweets.size} new tweets for '#{username}'..."
   tweets.reverse!
   tweets.each_with_index do |tweet, idx|
     puts tweet[:id] if (idx + 1) % 100 == 0
@@ -57,4 +57,8 @@ def store_tweets(username)
   end
 end
 
-store_tweets(ARGV[0]) if __FILE__ == $0
+if __FILE__ == $0
+  ARGV.each do |username|
+    store_tweets(username)
+  end
+end
